@@ -56,7 +56,7 @@ void* __attribute__((naked)) generator_next(Generator *g, void *arg)
 void __attribute__((naked)) generator_restore_context(void *rsp)
 {
     // @arch
-    (void)rsp;
+    UNUSED(rsp);
     asm(
     "    movq %rdi, %rsp\n"
     "    popq %r15\n"
@@ -129,13 +129,18 @@ void generator_return(void *arg, void *rsp)
 
 void generator__finish_current(void)
 {
-    da_last(&generator_stack)->dead = true;
+    Generator* g = da_last(&generator_stack);
+    g->dead = true;
+
     generator_stack.count -= 1;
     generator_restore_context_with_return(da_last(&generator_stack)->rsp, NULL);
 }
 
 Generator *generator_create(void (*f)(void*))
 {
+    //initializes the generators if the base generator is not available 
+    if(generator_stack.count == 0) generator_init();
+
     Generator *g = malloc(sizeof(Generator));
     assert(g != NULL && "Buy more RAM lol");
     memset(g, 0, sizeof(*g));
@@ -157,8 +162,16 @@ Generator *generator_create(void (*f)(void*))
     return g;
 }
 
+
 void generator_destroy(Generator *g)
 {
     munmap(g->stack_base, GENERATOR_STACK_CAPACITY);
     free(g);
+}
+
+bool generator_finished(Generator* g)
+{
+    bool dead = g->dead;
+    if(dead) generator_destroy(g);
+    return dead;
 }
