@@ -18,20 +18,19 @@
 #define GENERATOR_STACK_CAPACITY (1024*getpagesize())
 
 typedef struct {
-    Generator **items;
+    Generator *g;
+    size_t rsp;
+} Generator_Frame;
+
+
+typedef struct {
+    Generator_Frame *items;
     size_t count;
     size_t capacity;
 } Generator_Stack;
 
 thread_local Generator_Stack generator_stack = {0};
 
-void generator_init(void)
-{
-    Generator *g = malloc(sizeof(Generator));
-    assert(g != NULL && "Buy more RAM lol");
-    memset(g, 0, sizeof(*g));
-    da_append(&generator_stack, g);
-}
 
 // Linux x86_64 call convention
 // %rdi, %rsi, %rdx, %rcx, %r8, and %r9
@@ -89,8 +88,10 @@ void __attribute__((naked)) generator_restore_context_with_return(void *rsp, voi
 
 void generator_switch_context(Generator *g, void *arg, void *rsp)
 {
-    da_last(&generator_stack)->rsp = rsp;
-    da_append(&generator_stack, g);
+    Generator_Frame frame={0};
+    frame.g = g;
+    frame.rsp = rsp;
+    da_append(&generator_stack, frame);
     if (g->fresh) {
         g->fresh = false;
         // ******************************
@@ -122,16 +123,18 @@ void *__attribute__((naked)) generator_yield(void *arg)
 
 void generator_return(void *arg, void *rsp)
 {
-    da_last(&generator_stack)->rsp = rsp;
+    size_t restore_rsp = da_last(&generator_stack)->rsp;
+    da_last(&generator_stack)->g->rsp = rsp;
     generator_stack.count -= 1;
-    generator_restore_context_with_return(da_last(&generator_stack)->rsp, arg);
+    generator_restore_context_with_return(restore_rsp, arg);
 }
 
 void generator__finish_current(void)
 {
-    da_last(&generator_stack)->dead = true;
+    size_t restore_rsp = da_last(&generator_stack)->rsp;
+    da_last(&generator_stack)->g->dead = true;
     generator_stack.count -= 1;
-    generator_restore_context_with_return(da_last(&generator_stack)->rsp, NULL);
+    generator_restore_context_with_return(restore_rsp, NULL);
 }
 
 Generator *generator_create(void (*f)(void*))

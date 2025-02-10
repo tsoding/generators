@@ -16,8 +16,6 @@ void fib(void *arg)
 
 int main()
 {
-    generator_init();
-
     Generator *g = generator_create(fib);
     foreach (value, g, (void*)(1000*1000)) {
         printf("%ld\n", (long)value);
