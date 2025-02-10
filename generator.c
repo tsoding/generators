@@ -41,6 +41,7 @@ void* __attribute__((naked)) generator_next(Generator *g, void *arg)
     UNUSED(g);
     UNUSED(arg);
     // @arch
+    if(g->dead){asm("xor %rax, %rax\n ret\n");}
     asm(
     "    pushq %rdi\n"
     "    pushq %rbp\n"
