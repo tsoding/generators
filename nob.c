@@ -30,6 +30,9 @@ int main(int argc, char **argv)
     cmd_append(&cmd, "-o", BUILD_FOLDER"primes", EXAMPLES_FOLDER"primes.c", BUILD_FOLDER"generator.o");
     da_append(&procs, nob_cmd_run_async_and_reset(&cmd));
 
+    cc_with_cflags(&cmd);
+    cmd_append(&cmd, "-o", BUILD_FOLDER"coprimes", EXAMPLES_FOLDER"coprimes.c", BUILD_FOLDER"generator.o");
+    da_append(&procs, nob_cmd_run_async_and_reset(&cmd));
 
     if (!nob_procs_wait_and_reset(&procs)) return 1;
 
