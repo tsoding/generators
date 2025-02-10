@@ -11,16 +11,11 @@
 #define NOB_STRIP_PREFIX
 #include "nob.h"
 
+#include "generator.h"
+
 #define da_last(da) (da)->items[(da)->count-1]
 
 #define GENERATOR_STACK_CAPACITY (1024*getpagesize())
-
-typedef struct {
-    void *rsp;
-    void *stack_base;
-    bool dead;
-    bool fresh;
-} Generator;
 
 typedef struct {
     Generator **items;
@@ -166,51 +161,4 @@ void generator_destroy(Generator *g)
 {
     munmap(g->stack_base, GENERATOR_STACK_CAPACITY);
     free(g);
-}
-
-#define foreach(it, g, arg) for (void *it = generator_next(g, arg); !(g)->dead; it = generator_next(g, arg))
-
-void forever(void *arg)
-{
-    while (true) generator_yield(arg);
-}
-
-void fib(void *arg)
-{
-    long max = (long)arg;
-    long a = 0;
-    long b = 1;
-    while (a < max) {
-        generator_yield((void*)a);
-        long c = a + b;
-        a = b;
-        b = c;
-    }
-}
-
-void square(void *arg)
-{
-    while (true) {
-        long x = (long)arg;
-        arg = generator_yield((void*)(x*x));
-    }
-}
-
-int main()
-{
-    generator_init();
-
-    // Generator *g = generator_create(fib);
-    // foreach (value, g, (void*)(1000*1000)) {
-    //     printf("%ld\n", (long)value);
-    // }
-
-    Generator *g = generator_create(square);
-    for (long x = 0; x < 100; ++x) {
-        long xx = (long)generator_next(g, (void*)x);
-        printf("%ld\n", xx);
-    }
-
-    generator_destroy(g);
-    return 0;
 }

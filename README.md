@@ -5,8 +5,11 @@
 ```console
 $ cc -o nob nob.c
 $ ./nob
-$ ./generator
+$ ./build/fib
+$ ./build/square
 ```
+
+See [./examples/](./examples/) folder.
 
 ## References
 
