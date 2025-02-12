@@ -4,7 +4,7 @@
 
 ```console
 $ cc -o nob nob.c
-$ ./nob
+$ ./nob -j$(nproc)
 $ ./build/fib
 $ ./build/square
 ```

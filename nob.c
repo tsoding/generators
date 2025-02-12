@@ -7,17 +7,6 @@
 #define cc_with_cflags(cmd) cmd_append(cmd, "cc", "-Wall", "-Wextra", "-ggdb", "-I.")
 #define cc_output(cmd, output_path) cmd_append(cmd, "-o", output_path);
 
-long number_of_processors(void)
-{
-#ifdef __linux__
-    return sysconf(_SC_NPROCESSORS_ONLN);
-#else
-    // TODO: implement number_of_processors() for other platforms
-    // TODO: contribute number_of_processors() to nob.h
-    return 4; // chosen by fair dice roll
-#endif
-}
-
 struct {
     const char *input_path;
     const char *output_path;
@@ -34,6 +23,19 @@ int main(int argc, char **argv)
     NOB_GO_REBUILD_URSELF(argc, argv);
     Cmd cmd = {0};
     Procs procs = {0};
+    long nprocs = 1;
+
+    const char *program_name = shift(argv, argc);
+    String_View jprefix = sv_from_cstr("-j");
+    while (argc > 0) {
+        const char *flag = shift(argv, argc);
+        if (sv_starts_with(sv_from_cstr(flag), jprefix)) {
+            nprocs = atoi(flag + jprefix.count);
+        } else {
+            nob_log(ERROR, "Unknown flag `%s`", flag);
+            return 1;
+        }
+    }
 
     if (!nob_mkdir_if_not_exists(BUILD_FOLDER)) return 1;
 
@@ -42,7 +44,6 @@ int main(int argc, char **argv)
     cmd_append(&cmd, "-c", "generator.c");
     if (!nob_cmd_run_sync_and_reset(&cmd)) return 1;
 
-    long nprocs = number_of_processors();
     for (size_t i = 0; i < ARRAY_LEN(examples); ) {
         for (size_t j = 0; i < ARRAY_LEN(examples) && j < nprocs; ++j, ++i) {
             cc_with_cflags(&cmd);
