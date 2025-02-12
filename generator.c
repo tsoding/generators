@@ -13,7 +13,7 @@
 
 #include "generator.h"
 
-#define da_last(da) (da)->items[(da)->count-1]
+#define da_last(da) (NOB_ASSERT((da)->count > 0), (da)->items[(da)->count-1])
 
 #define GENERATOR_STACK_CAPACITY (1024*getpagesize())
 
